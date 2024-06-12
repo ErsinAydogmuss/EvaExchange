@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(cuid())
+  username String @unique
+  name     String
+  surname  String
+  phone    String @unique
+  email    String @unique
+  password String
+
+  portfolio Portfolio?
+
+  createdAt DateTime @default(now())
+}
+
+model Portfolio {
+  id     Int   @id @default(autoincrement())
+  wallet Float @default(0)
+
+  userId String @unique
+  User   User   @relation(fields: [userId], references: [id])
+
+  stocks       StockOnPortfolio[]
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+}
+
+model Stock {
+  id                  Int     @id @default(autoincrement())
+  symbol              String  @unique @db.VarChar(3)
+  name                String
+  currentPrice        Decimal @db.Decimal(10, 2)
+  price_impact_factor Decimal @db.Decimal(10, 5)
+
+  transactions Transaction[]
+  portfolios   StockOnPortfolio[]
+
+  updatedAt DateTime @default(now())
+}
+
+model Transaction {
+  id          Int     @id @default(autoincrement())
+  quantity    Int
+  price       Decimal @db.Decimal(10, 2)
+  totalAmount Decimal @db.Decimal(10, 2)
+
+  stockId Int
+  stock   Stock @relation(fields: [stockId], references: [id])
+
+  portfolioId Int
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
+
+  transactionType TransactionType
+  transactionDate DateTime        @default(now())
+}
+
+model StockOnPortfolio {
+  id       Int @id @default(autoincrement())
+  quantity Int
+
+  stockId Int
+  stock   Stock @relation(fields: [stockId], references: [id])
+
+  portfolioId Int
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([stockId, portfolioId])
+}
+
+enum TransactionType {
+  BUY
+  SELL
+}
